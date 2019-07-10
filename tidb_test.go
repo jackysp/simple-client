@@ -15,7 +15,7 @@ func TestTiDB(t *testing.T) {
 	}
 	defer db.Close()
 	importData(db)
-	testDML(db)
+	//testDML(db)
 	//testInsert(db)
 }
 
