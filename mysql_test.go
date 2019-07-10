@@ -16,6 +16,6 @@ func TestMysql(t *testing.T) {
 	defer db.Close()
 	importData(db)
 	testDML(db)
-	testInsert(db)
+	//testInsert(db)
 }
 

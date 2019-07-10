@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	threads = 4
-	batch = 1000000/threads
+	THREADS = 1
+	BATCH   = 1000000 / THREADS
 )
 
 func importData(db *sql.DB) {
@@ -26,10 +26,10 @@ func importData(db *sql.DB) {
 		log.Fatal(err)
 	}
 	var wg sync.WaitGroup
-	wg.Add(threads)
+	wg.Add(THREADS)
 	start := time.Now()
-	for i := 0; i < threads; i++ {
-		go func() {
+	for i := 0; i < THREADS; i++ {
+		go func(seq int) {
 			txn, err := db.Begin()
 			if err != nil {
 				log.Fatal(err)
@@ -48,7 +48,7 @@ func importData(db *sql.DB) {
 				log.Fatal(err)
 			}
 
-			for j := batch*i; j < batch*(i+1); j++ {
+			for j := BATCH *seq; j < BATCH*(seq+1); j++ {
 				_, err = stmt.Exec(j)
 				if err != nil {
 					log.Fatal(err)
@@ -65,7 +65,7 @@ func importData(db *sql.DB) {
 				log.Fatal(err)
 			}
 			wg.Done()
-		}()
+		}(i)
 	}
 	wg.Wait()
 	log.Println("import finish:", time.Since(start))
@@ -76,7 +76,7 @@ func testDML(db *sql.DB) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	_, err = db.Exec("create table t1 (i int)")
+	_, err = db.Exec("create table t1 (i int, unique (i))")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -84,6 +84,7 @@ func testDML(db *sql.DB) {
 	func () {
 		start := time.Now()
 		_, err = db.Exec("insert into t1 select * from t")
+		//_, err = db.Exec("insert into t1 select * from t order by i")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -92,13 +93,14 @@ func testDML(db *sql.DB) {
 
 	func () {
 		start := time.Now()
-		_, err = db.Exec("select * from t1")
+		_, err = db.Exec("select count(*) from t1")
 		if err != nil {
 			log.Fatal(err)
 		}
 		log.Println("select test finish:", time.Since(start))
 	}()
 
+	/*
 	func () {
 		start := time.Now()
 		_, err = db.Exec("update t1 set i = -i")
@@ -116,6 +118,7 @@ func testDML(db *sql.DB) {
 		}
 		log.Println("delete test finish:", time.Since(start))
 	}()
+	 */
 }
 
 func testInsert(db *sql.DB) {
@@ -127,7 +130,7 @@ func testInsert(db *sql.DB) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	total := batch*threads
+	total := BATCH * THREADS
 	values := make([]string, 0, total)
 	for i := 0; i < total; i++ {
 		values = append(values, "(" + strconv.Itoa(i) + ")")
